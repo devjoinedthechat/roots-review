@@ -86,11 +86,18 @@ numbers them. So `c3.f29` is `…/<release>/commit-3/file-29/`.
 
 ## Prompts and resources
 
-The server offers two prompts:
-- **`review-commit`:** a checklist for reviewing one commit with these tools. Each finding is
-  written as a claim, its location, the evidence, what would refute it, and a test that would
-  demonstrate it.
+The server offers four prompts, one per review job:
+- **`review-release`:** review what changed since the previous release. Unchanged commits are
+  skipped, modified commits are reviewed by their interdiff, and added commits are reviewed in full,
+  largest first.
+- **`review-port`:** check a port to a new Core version against the release it was ported from. It
+  covers unported commits and the interdiff of every ported commit, separates adaptations to the new
+  Core API from behaviour changes, and checks commits that are new in the port.
+- **`review-commit`:** review one commit in depth.
 - **`verify-finding`:** a skeptic pass that tries to disprove one finding before anyone acts on it.
+
+Every finding is written as a claim, its location, the evidence, what would refute it, and a test
+that would demonstrate it.
 
 Each built release's data files are also available as resources at
 `roots-review://{release}/{file}`: `replay.json`, `series.json`, `delta.json` and `manifest.json`.

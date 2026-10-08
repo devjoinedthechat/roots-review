@@ -3,6 +3,7 @@ Nothing is installed or registered; the process lives for the test only."""
 
 import json
 import os
+import re
 import subprocess
 import sys
 import unittest
@@ -217,9 +218,24 @@ class MCP(unittest.TestCase):
 
     def test_prompts_and_resources(self):
         names = {p["name"] for p in self.c.send("prompts/list")["result"]["prompts"]}
-        self.assertEqual(names, {"review-commit", "verify-finding"})
-        text = self.c.send("prompts/get", {"name": "review-commit", "arguments": {"release": R4, "index": "31"}})["result"]["messages"][0]["content"]["text"]
-        self.assertIn("commit 31 of Bitcoin Roots v29.4-roots.4", text)
+        self.assertEqual(names, {"review-commit", "review-release", "review-port", "verify-finding"})
+        def prompt(name, **args):
+            return self.c.send("prompts/get", {"name": name, "arguments": args})["result"]["messages"][0]["content"]["text"]
+        self.assertIn("commit 31 of Bitcoin Roots v29.4-roots.4", prompt("review-commit", release=R4, index="31"))
+        self.assertIn("Bitcoin Roots v29.4-roots.4 since the previous release", prompt("review-release", release=R4))
+        self.assertIn("port in Bitcoin Roots roots-30.3-candidate", prompt("review-port", release=C30))
+        for name in ("review-release", "review-port", "verify-finding"):
+            self.assertNotIn("{{", prompt(name, release=R4, finding="x"), name)
+        # Every identifier a prompt puts in backticks must be a real tool or a known result field,
+        # so a renamed or misspelled tool fails here instead of confusing an agent.
+        tools = {t["name"] for t in self.c.send("tools/list")["result"]["tools"]}
+        fields = {"web_url", "since_previous", "index", "path", "release", "at", "against", "verify", "context", "where"}
+        for name in names:
+            with open(os.path.join(ROOT, "prompts", name + ".md")) as f:
+                body = f.read()
+            for word in re.findall(r"`([a-z_]+)`", body):
+                self.assertIn(word, tools | fields, f"{name} mentions unknown tool or field {word!r}")
+        self.assertTrue(self.c.send("prompts/get", {"name": "review-release", "arguments": {}}).get("error"))
         res = {r["uri"] for r in self.c.send("resources/list")["result"]["resources"]}
         self.assertIn(f"roots-review://{R4}/series.json", res)
         self.assertEqual(self.c.send("resources/read", {"uri": f"roots-review://{R4}/../config.json"})["error"]["code"], -32602)
