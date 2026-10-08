@@ -1,5 +1,7 @@
 # roots-review
 
+[![tests](https://github.com/devjoinedthechat/roots-review/actions/workflows/tests.yml/badge.svg)](https://github.com/devjoinedthechat/roots-review/actions/workflows/tests.yml)
+
 roots-review gives review agents the published Bitcoin Roots patch series over the Model Context
 Protocol (MCP). Agents can read release by release, commit by commit, file by file and hunk by
 hunk. They can also read the code around each change: whole functions, files as of any commit, and
@@ -177,6 +179,9 @@ python3 -I run_tests.py            # unit tests, no network
 python3 -I run_tests.py --all      # also integration tests against built data, over stdio and HTTP
 ROOTS_REVIEW_DETERMINISM=1 python3 -I run_tests.py --all   # also rebuild twice and compare bytes
 ```
+
+CI runs the unit tests on Python 3.9 to 3.14. It then builds every published release and candidate,
+and runs the integration and determinism tests.
 
 ## Layout
 

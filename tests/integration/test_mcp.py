@@ -95,7 +95,8 @@ class MCP(unittest.TestCase):
         self.assertEqual(ov["since_previous"]["commits"], {"unchanged": 30, "added": 7})
         self.assertIsNone(ov["stale"])
         port = self.c.sc("release_overview", release=C30)["since_previous"]["port"]
-        self.assertEqual((port["paired"], port["old_commits"]), (37, 37))
+        self.assertEqual(port["old_commits"], 37)  # the candidate branch moves; v29.4-roots.4 does not
+        self.assertEqual(port["paired"] + len(port["unported_old_indices"]), 37)
 
     def test_commit_files_and_diff(self):
         cf = self.c.sc("commit_files", release=R4, index=3)
@@ -161,7 +162,7 @@ class MCP(unittest.TestCase):
         p = self.c.sc("compare_with_reference", release=R4, path="src/node/miner.cpp", against="previous")
         self.assertIn("UpdatePackagesForAdded(mempool, inBlock", p["text"])
         self.assertEqual(self.c.sc("release_delta", release=R4)["summary"], {"unchanged": 30, "added": 7})
-        self.assertEqual(self.c.sc("release_delta", release=C30)["port"]["paired"], 37)
+        self.assertEqual(self.c.sc("release_delta", release=C30)["port"]["old_commits"], 37)
 
     def test_open_url(self):
         base = "https://plan-b.foundation/bitcoin-roots/patches/v29.4-roots.4/"
