@@ -1,6 +1,10 @@
 # roots-review
 
 [![tests](https://github.com/devjoinedthechat/roots-review/actions/workflows/tests.yml/badge.svg)](https://github.com/devjoinedthechat/roots-review/actions/workflows/tests.yml)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![python: 3.9–3.14](https://img.shields.io/badge/python-3.9%E2%80%933.14-blue.svg)](.github/workflows/tests.yml)
+[![dependencies: none](https://img.shields.io/badge/dependencies-none-brightgreen.svg)](#requirements)
+[![MCP: stdio | HTTP](https://img.shields.io/badge/MCP-stdio%20%7C%20HTTP-blue.svg)](#connecting-a-client)
 
 roots-review gives review agents the published Bitcoin Roots patch series over the Model Context
 Protocol (MCP). Agents can read release by release, commit by commit, file by file and hunk by
