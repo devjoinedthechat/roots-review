@@ -37,6 +37,7 @@ class Golden(unittest.TestCase):
 
     def test_release_delta(self):
         self.assertEqual(load(R4, "delta")["summary"], {"unchanged": 30, "added": 7})
+        self.assertEqual(load(R3, "delta")["from"], "v29.4-roots.2")  # derived from the tag name
 
     @unittest.skipUnless(os.path.exists(os.path.join(OUT, C30, "manifest.json")), "candidate not built")
     def test_port_map(self):
@@ -48,8 +49,8 @@ class Golden(unittest.TestCase):
     def test_manifest_hashes(self):
         for r in (R3, R4):
             m = load(r, "manifest")
-            self.assertEqual(sorted(m["files"]), ["delta.json", "replay.json", "series.json"] if r == R4
-                             else ["replay.json", "series.json"])
+            self.assertEqual(sorted(m["files"]), ["delta.json", "replay.json", "series.json"])
+            self.assertTrue(m["release_config"]["derived"])
             for name, digest in m["files"].items():
                 with open(os.path.join(OUT, r, name), "rb") as f:
                     self.assertEqual(hashlib.sha256(f.read()).hexdigest(), digest, name)

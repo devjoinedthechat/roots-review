@@ -9,7 +9,7 @@ import unittest
 
 from roots_review import OUT, ROOT
 
-R3, R4, C30 = "v29.4-roots.3", "v29.4-roots.4", "roots-30.3-candidate"
+R1, R3, R4, C30 = "v29.4-roots.1", "v29.4-roots.3", "v29.4-roots.4", "roots-30.3-candidate"
 # The line series commit 31 ("fix(mining): account for priority-selected ancestors") adds.
 MINER_FIX = "UpdatePackagesForAdded(mempool, inBlock, mapModifiedTx)"
 
@@ -84,6 +84,9 @@ class MCP(unittest.TestCase):
 
     def test_releases_and_overview(self):
         rel = {r["release"]: r for r in self.c.sc("list_releases")["releases"]}
+        self.assertTrue(rel[R1]["verified"]["replay_reproduces_source_tree"])  # built from its tag name alone
+        self.assertIsNone(rel[R1]["previous"])
+        self.assertEqual(rel[R3]["previous"], "v29.4-roots.2")
         self.assertTrue(rel[R4]["verified"]["sha512_matches_sha512sums"])
         self.assertTrue(rel[R4]["verified"]["replay_reproduces_source_tree"])
         self.assertIsNone(rel[C30]["web_url"])
@@ -194,7 +197,7 @@ class MCP(unittest.TestCase):
                            ("series_list", {"release": R4, "extra": 1}), ("series_list", {"release": "v0.0-nope"}),
                            ("commit_diff", {"release": R4, "index": 3, "context": 99}),
                            ("read_file", {"release": R4, "path": "src/init.cpp", "side": "core", "at": 3}),
-                           ("release_delta", {"release": R3})]:
+                           ("release_delta", {"release": R1})]:
             with self.subTest(name=name, args=args):
                 self.assertTrue(self.c.call(name, **args)["isError"])
 

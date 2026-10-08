@@ -21,13 +21,17 @@ checksums and reproduce the tagged source tree.
 ## Quick start
 
 ```sh
-python3 -I roots-review build           # verify and index the configured releases
+python3 -I roots-review build           # verify and index every published release and candidate
 python3 -I mcp_server.py                # serve over stdio
 ```
 
-`build` fetches the Core and Knots base trees and the Roots tags. It downloads each published patch,
-checks it against `SHA512SUMS`, replays it onto Core, and indexes the result under `out/`. Later
-builds reuse what is already fetched and skip any release whose inputs have not changed.
+`build` lists the published Roots tags, fetches the Core and Knots base trees, downloads each
+published patch, checks it against `SHA512SUMS`, replays it onto Core, and indexes the result under
+`out/`. Later builds reuse what is already fetched and skip any release whose inputs have not
+changed. A release that was published without a patch is reported and skipped. A checksum or
+replay mismatch always stops the build.
+
+Running `build` on a schedule, or from the release workflow, is enough to keep a hosted server current.
 
 ## Connecting a client
 
@@ -127,14 +131,20 @@ against their own clone.
 | `patch_url`, `sums_url` | Where a release's patch and `SHA512SUMS` are published (`{release}`, `{version}`) |
 | `patch_browser_url` | The patch-browser page for a release (`{release}`); commit and file pages are derived from it |
 | `references` | Comparison trees for `compare_with_reference`, for example Knots `v29.3.knots20260507` against Core `v29.3` |
-| `reference_by_core` | Which reference applies to each Core line, for releases built from a tag name |
-| `releases` | Releases that need explicit settings, and unreleased candidates |
+| `reference_by_core` | Which reference applies to a Core line: a named reference, or `release:<tag>` |
+| `default_reference` | The reference for any Core line not listed in `reference_by_core` |
+| `releases` | Unreleased candidates, and any release that needs settings other than the derived ones |
 | `untrusted_markers` | Patterns that flag text addressed to an AI reviewer |
 
-**A new published release** needs no change. `build v29.4-roots.5` derives its Core base, reference
-and previous release from the tag name.
+**A new published release needs no change**, including the first release of a new Core line.
+Everything is derived from the tag name:
+- **Core base:** `v30.3-roots.1` builds on Core `v30.3`.
+- **Reference:** from `reference_by_core`, otherwise `default_reference`.
+- **Previous release:** `v29.4-roots.5` follows `v29.4-roots.4`. The first release of a Core line
+  follows the newest release of the previous line, so `v30.3-roots.1` follows `v29.4-roots.4` and
+  its delta is a port map.
 
-**A new Core line** (for example 30.3) needs a `references` entry and a `reference_by_core` entry.
+`roots-review discover` shows what each tag resolves to.
 
 **An unreleased branch** is added under `releases`:
 
@@ -147,7 +157,7 @@ and previous release from the tag name.
 
 ```
 roots-review build [RELEASE ...] [--force] [--offline] [--refresh] [--allow-unverified]
-roots-review discover        list published Roots tags and which are built
+roots-review discover        list published Roots tags, what each resolves to, and which are built
 roots-review clean [--all]   remove out/ (and the .work/ cache with --all)
 ```
 

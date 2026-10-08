@@ -18,7 +18,7 @@ import time
 
 from . import OUT, TOOL, WORK, ReviewError, VerificationError, read_json, sha256_file, write_json
 from . import delta, series, workspace
-from .config import load_config, reference, release_cfg
+from .config import load_config, reference, release_cfg, set_known_tags
 from .git import git, rev
 
 FILES = ("replay", "series", "delta")
@@ -41,34 +41,51 @@ def _log(msg):
 
 
 def _deps(cfg, release):
+    """(required, optional) dependencies: a release used as the reference is required;
+    the previous release only feeds the delta, so a release without one still builds."""
     rel = release_cfg(cfg, release)
-    deps = []
-    if rel["reference"].startswith("release:"):
-        deps.append(rel["reference"][8:])
-    if rel.get("previous") and rel["previous"] not in deps:
-        deps.append(rel["previous"])
-    return deps
+    required = [rel["reference"][8:]] if rel["reference"].startswith("release:") else []
+    optional = [rel["previous"]] if rel.get("previous") and rel["previous"] not in required else []
+    return required, optional
 
 
-def build_order(cfg, releases):
+def build_order(cfg, releases, required=None):
+    """Dependencies first. Returns [(release, required)]. Releases in `required` (default: all
+    of `releases`) and their reference releases must build; anything else that fails is
+    reported and skipped instead of stopping the run."""
     order, seen, stack = [], set(), set()
+    required = set(releases if required is None else required)
 
-    def visit(r):
+    def visit(r, needed):
+        if needed:
+            required.add(r)
         if r in seen:
             return
         if r in stack:
             raise ReviewError(f"dependency cycle at {r}")
         stack.add(r)
-        for d in _deps(cfg, r):
-            visit(d)
+        req, opt = _deps(cfg, r)
+        for d in req:
+            visit(d, needed)
+        for d in opt:
+            visit(d, False)
         stack.discard(r)
         seen.add(r)
         order.append(r)
 
     for r in releases:
         release_cfg(cfg, r)
-        visit(r)
-    return order
+        visit(r, r in required)
+    return [(r, r in required) for r in order]
+
+
+def _release_tags(cfg):
+    """Published v<core>-roots.<n> tags: from the remote, or offline from what is built."""
+    if workspace.OFFLINE:
+        names = os.listdir(OUT) if os.path.isdir(OUT) else []
+        return [n for n in names if os.path.exists(os.path.join(OUT, n, "manifest.json"))] + list(cfg["releases"])
+    out = git("ls-remote", "--tags", "--refs", cfg["remotes"]["roots"], cwd=None)
+    return [line.split("refs/tags/", 1)[1] for line in out.splitlines() if "refs/tags/" in line]
 
 
 def load_release(release):
@@ -95,6 +112,10 @@ def build_one(cfg, release, args):
     ref = reference(cfg, release)
     prev = rel.get("previous")
     prev_manifest = os.path.join(OUT, prev, "manifest.json") if prev else None
+    if prev and not os.path.exists(prev_manifest):
+        _log(f"[{release}] previous release {prev} is not available; building without a delta")
+        prev, prev_manifest = None, None
+    release_config = {k: v for k, v in rel.items() if k != "previous"} | ({"previous": prev} if prev else {})
 
     inputs = {
         "tool": TOOL,
@@ -104,7 +125,8 @@ def build_one(cfg, release, args):
         "series_head": replay["series_head"],
         "patch_sha512": replay["patch_sha512"],
         "reference": {"name": ref["name"], "base": rev(ref["base"]), "tip": rev(ref["tip"])},
-        "previous": read_json(prev_manifest)["fingerprint"] if prev_manifest and os.path.exists(prev_manifest) else None,
+        "release_config": release_config,
+        "previous": read_json(prev_manifest)["fingerprint"] if prev_manifest else None,
     }
     fp = hashlib.sha256(json.dumps(inputs, sort_keys=True).encode()).hexdigest()
     manifest_path = os.path.join(rdir, "manifest.json")
@@ -129,35 +151,46 @@ def build_one(cfg, release, args):
         path = os.path.join(rdir, f"{name}.json")
         write_json(path, {"meta": _meta(name, release, fp), **obj})
         hashes[f"{name}.json"] = sha256_file(path)
-    write_json(manifest_path, {"tool": TOOL, "release": release, "fingerprint": fp,
-                               "inputs": inputs, "files": hashes})
+    write_json(manifest_path, {"tool": TOOL, "release": release, "release_config": release_config,
+                               "fingerprint": fp, "inputs": inputs, "files": hashes})
     _log(f"[{release}] done in {time.time() - t0:.0f}s: {len(replay['commits'])} commits verified and indexed")
 
 
 def cmd_build(args):
     cfg = load_config()
     workspace.OFFLINE = args.offline
-    targets = args.releases or list(cfg["releases"])
-    order = build_order(cfg, targets)
+    set_known_tags(cfg, _release_tags(cfg))
+    configured = [r for r, rel in cfg["releases"].items() if not rel.get("derived")]
+    if args.releases:
+        targets, required = args.releases, set(args.releases)
+    else:
+        # Every published release plus the configured candidates. A published release that
+        # cannot be fetched (for example one released without a patch) is reported and skipped.
+        targets, required = cfg["_known_tags"] + configured, set(configured)
+    order = build_order(cfg, targets, required)
     workspace.init_repo()
-    for r in order:
-        build_one(cfg, r, args)
+    for r, needed in order:
+        try:
+            build_one(cfg, r, args)
+        except VerificationError:
+            raise  # a checksum or replay mismatch is never skipped
+        except ReviewError as e:
+            if needed:
+                raise
+            _log(f"[{r}] skipped: {str(e).splitlines()[0]}")
     return 0
 
 
 def cmd_discover(args):
-    import re
     cfg = load_config()
     out = git("ls-remote", "--tags", "--refs", cfg["remotes"]["roots"], cwd=None)
-    tags = sorted({line.split("refs/tags/")[1] for line in out.splitlines() if "refs/tags/" in line},
-                  key=lambda t: [int(x) for x in re.findall(r"\d+", t)])
-    for t in tags:
-        if not re.match(r"^v\d+\.\d+-roots\.\d+$", t):
-            continue
+    tags = [line.split("refs/tags/")[1] for line in out.splitlines() if "refs/tags/" in line]
+    set_known_tags(cfg, tags)
+    for t in cfg["_known_tags"]:
         built = os.path.exists(os.path.join(OUT, t, "manifest.json"))
         try:
-            release_cfg(cfg, t)
-            note = "built" if built else "buildable: roots-review build " + t
+            rel = release_cfg(cfg, t)
+            note = ("built" if built else "buildable") + f"; previous: {rel.get('previous') or 'none'}"
         except ReviewError as e:
             note = f"not buildable: {str(e).split(';')[0]}"
         print(f"{t:18} {note}")

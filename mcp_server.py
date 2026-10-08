@@ -62,16 +62,24 @@ class NotInitialized(Exception):
 
 
 def _known_releases():
-    """Configured releases plus any built release derived from its tag name."""
+    """Configured releases plus every built one, with the settings its build recorded."""
     names = list(CFG["releases"])
     if os.path.isdir(OUT):
         for name in sorted(os.listdir(OUT)):
-            if name not in names and os.path.exists(os.path.join(OUT, name, "manifest.json")):
+            path = os.path.join(OUT, name, "manifest.json")
+            if not os.path.exists(path):
+                continue
+            with open(path, encoding="utf-8") as f:
+                recorded = json.load(f).get("release_config")
+            if recorded:
+                CFG["releases"][name] = recorded
+            elif name not in CFG["releases"]:
                 try:
                     release_cfg(CFG, name)
-                    names.append(name)
                 except ReviewError:
-                    pass
+                    continue
+            if name not in names:
+                names.append(name)
     return names
 
 
