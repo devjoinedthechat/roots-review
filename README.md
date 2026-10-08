@@ -181,3 +181,7 @@ tests/              unit and integration tests
 out/<release>/      replay.json, series.json, delta.json, manifest.json
 .work/              replay repository and downloads (a cache; safe to delete)
 ```
+
+## License
+
+MIT. See [LICENSE](LICENSE).
