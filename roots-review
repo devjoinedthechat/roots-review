@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+# Launcher: run with `python3 -I roots-review ...`. Isolated mode ignores PYTHON*
+# environment variables and the current directory; the project directory is
+# added explicitly instead.
+import os
+import sys
+
+sys.dont_write_bytecode = True  # .pyc files embed absolute local paths
+
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+from roots_review.cli import main  # noqa: E402
+
+sys.exit(main(sys.argv[1:]))

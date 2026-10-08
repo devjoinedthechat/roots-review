@@ -1,0 +1,9 @@
+# Cache: replay repository and downloads (rebuilt by `roots-review build`)
+.work/
+# Build output (rebuilt by `roots-review build`)
+out/
+__pycache__/
+*.pyc
+*.tmp
+*.part
+.DS_Store

@@ -1,0 +1,55 @@
+{
+  "schema": "roots-review/config@2",
+  "remotes": {
+    "core": "https://github.com/bitcoin/bitcoin.git",
+    "knots": "https://github.com/bitcoinknots/bitcoin.git",
+    "roots": "https://github.com/LuganoPlanB/bitcoin-roots.git"
+  },
+  "github_repo": "LuganoPlanB/bitcoin-roots",
+  "patch_url": "https://github.com/LuganoPlanB/bitcoin-roots/releases/download/{release}/bitcoin-roots-{version}.patch",
+  "sums_url": "https://github.com/LuganoPlanB/bitcoin-roots/releases/download/{release}/SHA512SUMS",
+  "patch_browser_url": "https://plan-b.foundation/bitcoin-roots/patches/{release}/",
+  "reference_by_core": {
+    "29.4": "knots-29.3"
+  },
+  "references": {
+    "knots-29.3": {
+      "label": "Knots v29.3.knots20260507",
+      "base": {
+        "remote": "core",
+        "tag": "v29.3"
+      },
+      "tip": {
+        "remote": "knots",
+        "tag": "v29.3.knots20260507"
+      }
+    }
+  },
+  "releases": {
+    "v29.4-roots.3": {
+      "kind": "published",
+      "core_base": "v29.4",
+      "reference": "knots-29.3"
+    },
+    "v29.4-roots.4": {
+      "kind": "published",
+      "core_base": "v29.4",
+      "reference": "knots-29.3",
+      "previous": "v29.4-roots.3"
+    },
+    "roots-30.3-candidate": {
+      "kind": "candidate",
+      "branch": "roots/30.3",
+      "core_base": "v30.3",
+      "reference": "release:v29.4-roots.4",
+      "previous": "v29.4-roots.4"
+    }
+  },
+  "untrusted_markers": [
+    "ignore (all |any )?(previous|prior|above) instructions",
+    "\\b(ai|llm|agent|assistant|model|copilot|claude|gpt)\\b.{0,40}\\b(reviewer|review|approve)\\b",
+    "system prompt",
+    "<\\|(im_start|system|endoftext)\\|>",
+    "you are (an?|the) (ai|assistant|reviewer|language model)"
+  ]
+}
