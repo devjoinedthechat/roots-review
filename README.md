@@ -1,10 +1,23 @@
-# roots-review
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg">
+    <img src="assets/logo-light.svg" alt="" width="112" height="112">
+  </picture>
+</p>
 
-[![tests](https://github.com/devjoinedthechat/roots-review/actions/workflows/tests.yml/badge.svg)](https://github.com/devjoinedthechat/roots-review/actions/workflows/tests.yml)
-[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![python: 3.9–3.14](https://img.shields.io/badge/python-3.9%E2%80%933.14-blue.svg)](.github/workflows/tests.yml)
-[![dependencies: none](https://img.shields.io/badge/dependencies-none-brightgreen.svg)](#requirements)
-[![MCP: stdio | HTTP](https://img.shields.io/badge/MCP-stdio%20%7C%20HTTP-blue.svg)](#connecting-a-client)
+<h1 align="center">roots-review</h1>
+
+<p align="center">
+  <b>Read-only MCP server for reviewing the verified Bitcoin Roots patch series.</b>
+</p>
+
+<p align="center">
+  <a href="https://github.com/devjoinedthechat/roots-review/actions/workflows/tests.yml"><img src="https://github.com/devjoinedthechat/roots-review/actions/workflows/tests.yml/badge.svg" alt="tests"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-b45309" alt="MIT license"></a>
+  <a href=".github/workflows/tests.yml"><img src="https://img.shields.io/badge/python-3.9%E2%80%933.14-b45309" alt="python 3.9–3.14"></a>
+  <a href="#requirements"><img src="https://img.shields.io/badge/dependencies-none-b45309" alt="no dependencies"></a>
+  <a href="#connecting-a-client"><img src="https://img.shields.io/badge/MCP-stdio%20%7C%20HTTP-b45309" alt="MCP over stdio or HTTP"></a>
+</p>
 
 roots-review gives review agents the published Bitcoin Roots patch series over the Model Context
 Protocol (MCP). Agents can read release by release, commit by commit, file by file and hunk by
